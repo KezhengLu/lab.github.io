@@ -1,1 +1,166 @@
-<p>Hello</p>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV 公开搜索表格</title>
+    <style>
+        /* 简单样式优化，提升可读性 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .search-container {
+            margin-bottom: 2rem;
+        }
+        #searchInput {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            outline: none;
+        }
+        #searchInput:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 0.8rem 1rem;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .no-result {
+            margin-top: 1rem;
+            color: #666;
+            font-size: 1rem;
+            text-align: center;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="输入关键词搜索表格内容（支持所有列模糊匹配）...">
+    </div>
+    <table id="csvTable">
+        <thead id="tableHeader"></thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+    <div id="noResult" class="no-result" style="display: none;">未找到匹配的内容</div>
+
+    <!-- 引入 Papa Parse 库（CDN 方式，无需本地下载） -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+    <script>
+        // 1. 核心变量定义
+        const csvFilePath = 'data.csv'; // 对应你的CSV文件名称
+        let csvData = []; // 存储解析后的所有CSV数据
+        const tableHeader = document.getElementById('tableHeader');
+        const tableBody = document.getElementById('tableBody');
+        const searchInput = document.getElementById('searchInput');
+        const noResult = document.getElementById('noResult');
+
+        // 2. 加载并解析CSV文件
+        function loadAndParseCSV() {
+            // 使用Papa Parse加载远程CSV文件（GitHub Pages中为相对路径）
+            Papa.parse(csvFilePath, {
+                download: true, // 开启下载模式（支持远程/本地文件）
+                header: true, // 将第一行作为表头（返回对象格式数据）
+                complete: function (result) {
+                    csvData = result.data; // 存储解析后的CSV数据
+                    renderTable(csvData); // 渲染完整表格
+                    console.log('CSV文件解析成功，共 ' + csvData.length + ' 条数据');
+                },
+                error: function (error) {
+                    console.error('CSV文件解析失败：', error);
+                    alert('加载CSV文件失败，请检查文件路径是否正确');
+                }
+            });
+        }
+
+        // 3. 渲染HTML表格
+        function renderTable(data) {
+            // 清空原有表格内容
+            tableHeader.innerHTML = '';
+            tableBody.innerHTML = '';
+
+            if (data.length === 0) {
+                noResult.style.display = 'block';
+                return;
+            }
+            noResult.style.display = 'none';
+
+            // 渲染表头（从第一条数据中获取键作为表头）
+            const headers = Object.keys(data[0]);
+            const headerRow = document.createElement('tr');
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                headerRow.appendChild(th);
+            });
+            tableHeader.appendChild(headerRow);
+
+            // 渲染表格内容
+            data.forEach(rowData => {
+                const row = document.createElement('tr');
+                headers.forEach(header => {
+                    const td = document.createElement('td');
+                    // 处理空值，避免显示undefined
+                    td.textContent = rowData[header] || '';
+                    row.appendChild(td);
+                });
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 4. 搜索功能实现（模糊匹配所有列）
+        function searchTable(keyword) {
+            if (!keyword) {
+                // 关键词为空时，显示所有数据
+                renderTable(csvData);
+                return;
+            }
+            const lowerKeyword = keyword.toLowerCase().trim();
+            // 筛选包含关键词的数据（所有列模糊匹配）
+            const filteredData = csvData.filter(row => {
+                // 将当前行的所有值转为字符串并拼接，判断是否包含关键词
+                return Object.values(row).some(value => {
+                    return String(value).toLowerCase().includes(lowerKeyword);
+                });
+            });
+            renderTable(filteredData); // 渲染筛选后的表格
+        }
+
+        // 5. 绑定搜索框输入事件（实时搜索）
+        searchInput.addEventListener('input', function () {
+            const keyword = this.value;
+            searchTable(keyword);
+        });
+
+        // 6. 页面加载完成后，自动加载CSV并初始化
+        window.addEventListener('DOMContentLoaded', function () {
+            loadAndParseCSV();
+        });
+    </script>
+</body>
+</html>
