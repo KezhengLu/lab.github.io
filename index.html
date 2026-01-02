@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSV 多条件公开搜索表格</title>
+    <title>表格搜索功能测试>biao>bi
     <style>
         /* 简单样式优化，提升可读性 */
         * {
@@ -85,9 +85,45 @@
             text-align: center;
             padding: 2rem;
         }
+        /* CSV文件选择器样式 */
+        .csv-select-container {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .csv-select-container label {
+            font-weight: bold;
+            color: #333;
+            margin-right: 1rem;
+        }
+        #csvFileSelector {
+            padding: 0.6rem 1rem;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+        #csvFileSelector:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
     </style>
 </head>
 <body>
+    <!-- 新增：CSV文件选择容器 -->
+    <div class="csv-select-container">
+        <label for="csvFileSelector">选择要加载的CSV文件：</label>
+        <select id="csvFileSelector">
+            <option value="data.csv" selected>data.csv</option>
+            <option value="data1.csv">data1.csv</option>
+            <option value="data2.csv">data2.csv</option>
+            <!-- 如需添加更多CSV文件，直接复制option标签修改value和显示文本即可 -->
+            <!-- 示例：<option value="data3.csv">data3.csv</option> -->
+        </select>
+    </div>
+
     <div class="search-container">
         <!-- 原有全局搜索框（保留，可选使用） -->
         <div class="search-item">
@@ -105,12 +141,6 @@
                 <input type="text" id="ageSearch" placeholder="输入年龄（支持模糊匹配，如2开头）...">
             </div>
             <!-- 如需添加其他列搜索框，复制上面的div修改id和提示文字即可 -->
-            <!-- 示例：搜索职业
-            <div style="flex: 1; min-width: 200px;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">搜索职业</label>
-                <input type="text" id="jobSearch" placeholder="输入职业关键词...">
-            </div>
-            -->
         </div>
     </div>
 
@@ -125,30 +155,34 @@
 
     <script>
         // 1. 核心变量定义
-        const csvFilePath = 'data.csv'; // 对应你的CSV文件名称
+        let csvFilePath = 'data.csv'; // 初始CSV文件名称
         let csvData = []; // 存储解析后的所有CSV数据
         const tableHeader = document.getElementById('tableHeader');
         const tableBody = document.getElementById('tableBody');
         const globalSearchInput = document.getElementById('searchInput'); // 全局搜索
         const nameSearchInput = document.getElementById('nameSearch'); // 名字搜索
         const ageSearchInput = document.getElementById('ageSearch'); // 年龄搜索
-        // 如需其他列搜索，在这里定义对应的input变量，如：const jobSearchInput = document.getElementById('jobSearch');
         const noResult = document.getElementById('noResult');
+        const csvFileSelector = document.getElementById('csvFileSelector'); // CSV文件选择器
 
-        // 2. 加载并解析CSV文件
-        function loadAndParseCSV() {
+        // 2. 加载并解析CSV文件（重构：支持传入文件路径）
+        function loadAndParseCSV(filePath) {
             // 使用Papa Parse加载远程CSV文件（GitHub Pages中为相对路径）
-            Papa.parse(csvFilePath, {
+            Papa.parse(filePath, {
                 download: true, // 开启下载模式（支持远程/本地文件）
                 header: true, // 将第一行作为表头（返回对象格式数据）
                 complete: function (result) {
                     csvData = result.data; // 存储解析后的CSV数据
                     renderTable(csvData); // 渲染完整表格
-                    console.log('CSV文件解析成功，共 ' + csvData.length + ' 条数据');
+                    // 重置所有搜索框内容（切换文件后清空搜索条件）
+                    globalSearchInput.value = '';
+                    nameSearchInput.value = '';
+                    ageSearchInput.value = '';
+                    console.log(filePath + ' 文件解析成功，共 ' + csvData.length + ' 条数据');
                 },
                 error: function (error) {
-                    console.error('CSV文件解析失败：', error);
-                    alert('加载CSV文件失败，请检查文件路径是否正确');
+                    console.error(filePath + ' 文件解析失败：', error);
+                    alert('加载 ' + filePath + ' 文件失败，请检查文件路径是否正确');
                 }
             });
         }
@@ -194,7 +228,6 @@
             const globalKeyword = globalSearchInput.value.toLowerCase().trim();
             const nameKeyword = nameSearchInput.value.toLowerCase().trim();
             const ageKeyword = ageSearchInput.value.toLowerCase().trim();
-            // 如需其他列搜索，获取对应关键词，如：const jobKeyword = jobSearchInput.value.toLowerCase().trim();
 
             // 第一步：筛选满足所有列专属搜索条件的数据
             let filteredData = [...csvData];
@@ -214,15 +247,6 @@
                     return ageValue.includes(ageKeyword);
                 });
             }
-            // 如需添加其他列筛选，复制上面的逻辑，修改列名即可
-            /* 示例：筛选职业列
-            if (jobKeyword) {
-                filteredData = filteredData.filter(row => {
-                    const jobValue = String(row['职业'] || row['job']).toLowerCase();
-                    return jobValue.includes(jobKeyword);
-                });
-            }
-            */
 
             // 第二步：叠加全局搜索条件（如果有全局关键词）
             if (globalKeyword) {
@@ -237,21 +261,25 @@
             renderTable(filteredData);
         }
 
-        // 5. 绑定所有搜索框的输入事件（实时触发多条件搜索）
-        function bindSearchEvents() {
+        // 5. 绑定所有事件（新增：文件选择器切换事件）
+        function bindEvents() {
             // 全局搜索框事件
             globalSearchInput.addEventListener('input', multiConditionSearch);
             // 名字搜索框事件
             nameSearchInput.addEventListener('input', multiConditionSearch);
             // 年龄搜索框事件
             ageSearchInput.addEventListener('input', multiConditionSearch);
-            // 如需其他列搜索，绑定对应事件，如：jobSearchInput.addEventListener('input', multiConditionSearch);
+            // 新增：CSV文件选择器切换事件
+            csvFileSelector.addEventListener('change', function() {
+                csvFilePath = this.value; // 更新选中的CSV文件路径
+                loadAndParseCSV(csvFilePath); // 重新加载并解析选中的CSV文件
+            });
         }
 
         // 6. 页面加载完成后，自动加载CSV并初始化
         window.addEventListener('DOMContentLoaded', function () {
-            loadAndParseCSV();
-            bindSearchEvents(); // 绑定所有搜索事件
+            bindEvents(); // 绑定所有事件
+            loadAndParseCSV(csvFilePath); // 加载初始CSV文件
         });
     </script>
 </body>
