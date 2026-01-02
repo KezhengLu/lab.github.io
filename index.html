@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>表格搜索功能测试</title>
+    <title>CSV 多条件搜索表格 </title>
     <style>
-        /* 简单样式优化，提升可读性 */
+        /* 原有样式保留，新增文件选择器样式 */
         * {
             margin: 0;
             padding: 0;
@@ -17,7 +17,29 @@
             max-width: 1200px;
             margin: 0 auto;
         }
-        /* 多搜索条件容器样式 */
+        .csv-select-container {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .csv-select-container label {
+            font-weight: bold;
+            color: #333;
+            margin-right: 1rem;
+        }
+        #csvFileSelector {
+            padding: 0.6rem 1rem;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+        #csvFileSelector:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
         .search-container {
             margin-bottom: 2rem;
             padding: 1.5rem;
@@ -85,62 +107,56 @@
             text-align: center;
             padding: 2rem;
         }
-        /* CSV文件选择器样式 */
-        .csv-select-container {
-            margin-bottom: 2rem;
-            padding: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-        .csv-select-container label {
-            font-weight: bold;
-            color: #333;
-            margin-right: 1rem;
-        }
-        #csvFileSelector {
-            padding: 0.6rem 1rem;
-            font-size: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            outline: none;
-            cursor: pointer;
-        }
-        #csvFileSelector:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-        }
     </style>
 </head>
 <body>
-    <!-- 新增：CSV文件选择容器 -->
+    <!-- CSV文件选择器（关联光学元件/光机械件） -->
     <div class="csv-select-container">
         <label for="csvFileSelector">选择要加载的CSV文件：</label>
         <select id="csvFileSelector">
-            <option value="data.csv" selected>data.csv</option>
-            <option value="data1.csv">data1.csv</option>
-            <option value="data2.csv">data2.csv</option>
-            <!-- 如需添加更多CSV文件，直接复制option标签修改value和显示文本即可 -->
-            <!-- 示例：<option value="data3.csv">data3.csv</option> -->
+            <option value="data.csv" data-name="光学元件">光学元件（data.csv）</option>
+            <option value="data1.csv" data-name="光机械件">光机械件（data1.csv）</option>
+            <!-- 如需添加更多文件，复制上述option并修改对应值即可 -->
         </select>
     </div>
 
     <div class="search-container">
-        <!-- 原有全局搜索框（保留，可选使用） -->
+        <!-- 全局搜索（排除总数、空余数量） -->
         <div class="search-item">
-            <label>全局搜索（匹配所有列）</label>
-            <input type="text" id="searchInput" placeholder="输入关键词搜索所有列内容...">
+            <label>全局搜索（匹配产品型号/类型/材料等，排除数量类列）</label>
+            <input type="text" id="searchInput" placeholder="输入关键词搜索（如：光学镜片、不锈钢）...">
         </div>
-        <!-- 新增列专属搜索框：名字 + 年龄（可根据你的CSV列名扩展） -->
+        <!-- 核心列专属搜索（适配两种CSV的公共列+独有列） -->
         <div class="column-search">
             <div style="flex: 1; min-width: 200px;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">搜索名字</label>
-                <input type="text" id="nameSearch" placeholder="输入姓名关键词...">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">产品型号</label>
+                <input type="text" id="modelSearch" placeholder="输入产品型号关键词...">
             </div>
             <div style="flex: 1; min-width: 200px;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">搜索年龄</label>
-                <input type="text" id="ageSearch" placeholder="输入年龄（支持模糊匹配，如2开头）...">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">产品类型</label>
+                <input type="text" id="typeSearch" placeholder="输入产品类型关键词...">
             </div>
-            <!-- 如需添加其他列搜索框，复制上面的div修改id和提示文字即可 -->
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">参数</label>
+                <input type="text" id="paramSearch" placeholder="输入参数关键词...">
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">备注</label>
+                <input type="text" id="remarkSearch" placeholder="输入备注关键词...">
+            </div>
+            <!-- 光学元件独有列：材料、尺寸、镀膜 -->
+            <div style="flex: 1; min-width: 200px;" id="materialWrap">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">材料</label>
+                <input type="text" id="materialSearch" placeholder="输入材料关键词（如：石英、玻璃）...">
+            </div>
+            <div style="flex: 1; min-width: 200px;" id="sizeWrap">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">尺寸</label>
+                <input type="text" id="sizeSearch" placeholder="输入尺寸关键词...">
+            </div>
+            <div style="flex: 1; min-width: 200px;" id="coatingWrap">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">镀膜</label>
+                <input type="text" id="coatingSearch" placeholder="输入镀膜关键词...">
+            </div>
         </div>
     </div>
 
@@ -150,46 +166,80 @@
     </table>
     <div id="noResult" class="no-result" style="display: none;">未找到匹配的内容</div>
 
-    <!-- 引入 Papa Parse 库（CDN 方式，无需本地下载） -->
+    <!-- 引入 Papa Parse 库 -->
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
     <script>
         // 1. 核心变量定义
-        let csvFilePath = 'data.csv'; // 初始CSV文件名称
-        let csvData = []; // 存储解析后的所有CSV数据
+        let csvFilePath = 'data.csv'; // 初始CSV文件
+        let csvData = []; // 存储解析后的CSV数据
+        let currentCsvType = '光学元件'; // 当前加载的CSV类型
+        // DOM元素
         const tableHeader = document.getElementById('tableHeader');
         const tableBody = document.getElementById('tableBody');
-        const globalSearchInput = document.getElementById('searchInput'); // 全局搜索
-        const nameSearchInput = document.getElementById('nameSearch'); // 名字搜索
-        const ageSearchInput = document.getElementById('ageSearch'); // 年龄搜索
+        const globalSearchInput = document.getElementById('searchInput');
         const noResult = document.getElementById('noResult');
-        const csvFileSelector = document.getElementById('csvFileSelector'); // CSV文件选择器
+        const csvFileSelector = document.getElementById('csvFileSelector');
+        // 公共列搜索框
+        const modelSearch = document.getElementById('modelSearch');
+        const typeSearch = document.getElementById('typeSearch');
+        const paramSearch = document.getElementById('paramSearch');
+        const remarkSearch = document.getElementById('remarkSearch');
+        // 光学元件独有列搜索框及容器
+        const materialSearch = document.getElementById('materialSearch');
+        const sizeSearch = document.getElementById('sizeSearch');
+        const coatingSearch = document.getElementById('coatingSearch');
+        const materialWrap = document.getElementById('materialWrap');
+        const sizeWrap = document.getElementById('sizeWrap');
+        const coatingWrap = document.getElementById('coatingWrap');
+        // 排除全局搜索的列（总数、空余数量）
+        const excludeGlobalSearchColumns = ['总数', '空余数量'];
 
-        // 2. 加载并解析CSV文件（重构：支持传入文件路径）
-        function loadAndParseCSV(filePath) {
-            // 使用Papa Parse加载远程CSV文件（GitHub Pages中为相对路径）
+        // 2. 加载并解析CSV文件（适配两种文件类型）
+        function loadAndParseCSV(filePath, csvType) {
+            currentCsvType = csvType;
+            // 根据CSV类型显示/隐藏独有列搜索框
+            if (csvType === '光学元件') {
+                materialWrap.style.display = 'block';
+                sizeWrap.style.display = 'block';
+                coatingWrap.style.display = 'block';
+            } else if (csvType === '光机械件') {
+                materialWrap.style.display = 'none';
+                sizeWrap.style.display = 'none';
+                coatingWrap.style.display = 'none';
+            }
+
             Papa.parse(filePath, {
-                download: true, // 开启下载模式（支持远程/本地文件）
-                header: true, // 将第一行作为表头（返回对象格式数据）
+                download: true,
+                header: true,
                 complete: function (result) {
-                    csvData = result.data; // 存储解析后的CSV数据
-                    renderTable(csvData); // 渲染完整表格
-                    // 重置所有搜索框内容（切换文件后清空搜索条件）
-                    globalSearchInput.value = '';
-                    nameSearchInput.value = '';
-                    ageSearchInput.value = '';
-                    console.log(filePath + ' 文件解析成功，共 ' + csvData.length + ' 条数据');
+                    csvData = result.data;
+                    renderTable(csvData);
+                    // 切换文件后清空所有搜索框
+                    clearAllSearchInputs();
+                    console.log(`${filePath}（${csvType}）解析成功，共 ${csvData.length} 条数据`);
                 },
                 error: function (error) {
-                    console.error(filePath + ' 文件解析失败：', error);
-                    alert('加载 ' + filePath + ' 文件失败，请检查文件路径是否正确');
+                    console.error(`${filePath} 解析失败：`, error);
+                    alert(`加载 ${filePath} 失败，请检查文件路径是否正确`);
                 }
             });
         }
 
-        // 3. 渲染HTML表格
+        // 3. 清空所有搜索框输入
+        function clearAllSearchInputs() {
+            globalSearchInput.value = '';
+            modelSearch.value = '';
+            typeSearch.value = '';
+            paramSearch.value = '';
+            remarkSearch.value = '';
+            materialSearch.value = '';
+            sizeSearch.value = '';
+            coatingSearch.value = '';
+        }
+
+        // 4. 渲染HTML表格（适配两种表头）
         function renderTable(data) {
-            // 清空原有表格内容
             tableHeader.innerHTML = '';
             tableBody.innerHTML = '';
 
@@ -199,7 +249,7 @@
             }
             noResult.style.display = 'none';
 
-            // 渲染表头（从第一条数据中获取键作为表头）
+            // 渲染表头（自动适配当前CSV的表头）
             const headers = Object.keys(data[0]);
             const headerRow = document.createElement('tr');
             headers.forEach(headerText => {
@@ -214,7 +264,6 @@
                 const row = document.createElement('tr');
                 headers.forEach(header => {
                     const td = document.createElement('td');
-                    // 处理空值，避免显示undefined
                     td.textContent = rowData[header] || '';
                     row.appendChild(td);
                 });
@@ -222,64 +271,118 @@
             });
         }
 
-        // 4. 多条件组合搜索功能（核心：全局搜索 + 列专属搜索叠加筛选）
+        // 5. 多条件组合搜索（核心优化：排除总数/空余数量，适配两种CSV）
         function multiConditionSearch() {
-            // 获取所有搜索框的关键词（转为小写并去除首尾空格）
+            // 获取所有搜索关键词（小写+去空格）
             const globalKeyword = globalSearchInput.value.toLowerCase().trim();
-            const nameKeyword = nameSearchInput.value.toLowerCase().trim();
-            const ageKeyword = ageSearchInput.value.toLowerCase().trim();
+            const modelKeyword = modelSearch.value.toLowerCase().trim();
+            const typeKeyword = typeSearch.value.toLowerCase().trim();
+            const paramKeyword = paramSearch.value.toLowerCase().trim();
+            const remarkKeyword = remarkSearch.value.toLowerCase().trim();
+            const materialKeyword = materialSearch.value.toLowerCase().trim();
+            const sizeKeyword = sizeSearch.value.toLowerCase().trim();
+            const coatingKeyword = coatingSearch.value.toLowerCase().trim();
 
-            // 第一步：筛选满足所有列专属搜索条件的数据
+            // 筛选逻辑
             let filteredData = [...csvData];
-            // 筛选名字列
-            if (nameKeyword) {
+
+            // 第一步：公共列筛选（适配两种CSV）
+            if (modelKeyword) {
                 filteredData = filteredData.filter(row => {
-                    // 注意：这里的"姓名"要和你的CSV表头列名完全一致（大小写敏感），可修改为你的列名如"name"
-                    const nameValue = String(row['姓名'] || row['name']).toLowerCase();
-                    return nameValue.includes(nameKeyword);
+                    const modelValue = String(row['产品型号'] || '').toLowerCase();
+                    return modelValue.includes(modelKeyword);
                 });
             }
-            // 筛选年龄列
-            if (ageKeyword) {
+            if (typeKeyword) {
                 filteredData = filteredData.filter(row => {
-                    // 注意：这里的"年龄"要和你的CSV表头列名完全一致，可修改为你的列名如"age"
-                    const ageValue = String(row['年龄'] || row['age']).toLowerCase();
-                    return ageValue.includes(ageKeyword);
+                    const typeValue = String(row['产品类型'] || '').toLowerCase();
+                    return typeValue.includes(typeKeyword);
+                });
+            }
+            if (paramKeyword) {
+                filteredData = filteredData.filter(row => {
+                    const paramValue = String(row['参数'] || '').toLowerCase();
+                    return paramValue.includes(paramKeyword);
+                });
+            }
+            if (remarkKeyword) {
+                filteredData = filteredData.filter(row => {
+                    const remarkValue = String(row['备注'] || '').toLowerCase();
+                    return remarkValue.includes(remarkKeyword);
                 });
             }
 
-            // 第二步：叠加全局搜索条件（如果有全局关键词）
+            // 第二步：光学元件独有列筛选
+            if (currentCsvType === '光学元件') {
+                if (materialKeyword) {
+                    filteredData = filteredData.filter(row => {
+                        const materialValue = String(row['材料'] || '').toLowerCase();
+                        return materialValue.includes(materialKeyword);
+                    });
+                }
+                if (sizeKeyword) {
+                    filteredData = filteredData.filter(row => {
+                        const sizeValue = String(row['尺寸'] || '').toLowerCase();
+                        return sizeValue.includes(sizeKeyword);
+                    });
+                }
+                if (coatingKeyword) {
+                    filteredData = filteredData.filter(row => {
+                        const coatingValue = String(row['镀膜'] || '').toLowerCase();
+                        return coatingValue.includes(coatingKeyword);
+                    });
+                }
+            }
+
+            // 第三步：全局搜索（排除总数、空余数量列）
             if (globalKeyword) {
                 filteredData = filteredData.filter(row => {
-                    return Object.values(row).some(value => {
+                    // 遍历当前行的所有键值对，排除指定列后进行匹配
+                    return Object.entries(row).some(([key, value]) => {
+                        // 跳过需要排除的列
+                        if (excludeGlobalSearchColumns.includes(key)) {
+                            return false;
+                        }
+                        // 模糊匹配关键词
                         return String(value).toLowerCase().includes(globalKeyword);
                     });
                 });
             }
 
-            // 渲染最终筛选后的表格
+            // 渲染筛选结果
             renderTable(filteredData);
         }
 
-        // 5. 绑定所有事件（新增：文件选择器切换事件）
+        // 6. 绑定所有事件
         function bindEvents() {
-            // 全局搜索框事件
-            globalSearchInput.addEventListener('input', multiConditionSearch);
-            // 名字搜索框事件
-            nameSearchInput.addEventListener('input', multiConditionSearch);
-            // 年龄搜索框事件
-            ageSearchInput.addEventListener('input', multiConditionSearch);
-            // 新增：CSV文件选择器切换事件
+            // 文件选择器事件
             csvFileSelector.addEventListener('change', function() {
-                csvFilePath = this.value; // 更新选中的CSV文件路径
-                loadAndParseCSV(csvFilePath); // 重新加载并解析选中的CSV文件
+                csvFilePath = this.value;
+                const csvType = this.options[this.selectedIndex].dataset.name;
+                loadAndParseCSV(csvFilePath, csvType);
             });
+
+            // 全局搜索事件
+            globalSearchInput.addEventListener('input', multiConditionSearch);
+
+            // 公共列搜索事件
+            modelSearch.addEventListener('input', multiConditionSearch);
+            typeSearch.addEventListener('input', multiConditionSearch);
+            paramSearch.addEventListener('input', multiConditionSearch);
+            remarkSearch.addEventListener('input', multiConditionSearch);
+
+            // 光学元件独有列搜索事件
+            materialSearch.addEventListener('input', multiConditionSearch);
+            sizeSearch.addEventListener('input', multiConditionSearch);
+            coatingSearch.addEventListener('input', multiConditionSearch);
         }
 
-        // 6. 页面加载完成后，自动加载CSV并初始化
+        // 7. 页面初始化
         window.addEventListener('DOMContentLoaded', function () {
-            bindEvents(); // 绑定所有事件
-            loadAndParseCSV(csvFilePath); // 加载初始CSV文件
+            bindEvents();
+            // 获取初始文件类型
+            const initialCsvType = csvFileSelector.options[csvFileSelector.selectedIndex].dataset.name;
+            loadAndParseCSV(csvFilePath, initialCsvType);
         });
     </script>
 </body>
