@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSV 公开搜索表格</title>
+    <title>CSV 多条件公开搜索表格</title>
     <style>
         /* 简单样式优化，提升可读性 */
         * {
@@ -17,8 +17,21 @@
             max-width: 1200px;
             margin: 0 auto;
         }
+        /* 多搜索条件容器样式 */
         .search-container {
             margin-bottom: 2rem;
+            padding: 1.5rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .search-item {
+            margin-bottom: 1rem;
+        }
+        .search-item label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #333;
         }
         #searchInput {
             width: 100%;
@@ -28,7 +41,23 @@
             border-radius: 4px;
             outline: none;
         }
-        #searchInput:focus {
+        .column-search {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        .column-search input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.8rem 1rem;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            outline: none;
+        }
+        #searchInput:focus,
+        .column-search input:focus {
             border-color: #007bff;
             box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
         }
@@ -60,8 +89,31 @@
 </head>
 <body>
     <div class="search-container">
-        <input type="text" id="searchInput" placeholder="输入关键词搜索表格内容（支持所有列模糊匹配）...">
+        <!-- 原有全局搜索框（保留，可选使用） -->
+        <div class="search-item">
+            <label>全局搜索（匹配所有列）</label>
+            <input type="text" id="searchInput" placeholder="输入关键词搜索所有列内容...">
+        </div>
+        <!-- 新增列专属搜索框：名字 + 年龄（可根据你的CSV列名扩展） -->
+        <div class="column-search">
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">搜索名字</label>
+                <input type="text" id="nameSearch" placeholder="输入姓名关键词...">
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">搜索年龄</label>
+                <input type="text" id="ageSearch" placeholder="输入年龄（支持模糊匹配，如2开头）...">
+            </div>
+            <!-- 如需添加其他列搜索框，复制上面的div修改id和提示文字即可 -->
+            <!-- 示例：搜索职业
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">搜索职业</label>
+                <input type="text" id="jobSearch" placeholder="输入职业关键词...">
+            </div>
+            -->
+        </div>
     </div>
+
     <table id="csvTable">
         <thead id="tableHeader"></thead>
         <tbody id="tableBody"></tbody>
@@ -77,7 +129,10 @@
         let csvData = []; // 存储解析后的所有CSV数据
         const tableHeader = document.getElementById('tableHeader');
         const tableBody = document.getElementById('tableBody');
-        const searchInput = document.getElementById('searchInput');
+        const globalSearchInput = document.getElementById('searchInput'); // 全局搜索
+        const nameSearchInput = document.getElementById('nameSearch'); // 名字搜索
+        const ageSearchInput = document.getElementById('ageSearch'); // 年龄搜索
+        // 如需其他列搜索，在这里定义对应的input变量，如：const jobSearchInput = document.getElementById('jobSearch');
         const noResult = document.getElementById('noResult');
 
         // 2. 加载并解析CSV文件
@@ -133,33 +188,70 @@
             });
         }
 
-        // 4. 搜索功能实现（模糊匹配所有列）
-        function searchTable(keyword) {
-            if (!keyword) {
-                // 关键词为空时，显示所有数据
-                renderTable(csvData);
-                return;
-            }
-            const lowerKeyword = keyword.toLowerCase().trim();
-            // 筛选包含关键词的数据（所有列模糊匹配）
-            const filteredData = csvData.filter(row => {
-                // 将当前行的所有值转为字符串并拼接，判断是否包含关键词
-                return Object.values(row).some(value => {
-                    return String(value).toLowerCase().includes(lowerKeyword);
+        // 4. 多条件组合搜索功能（核心：全局搜索 + 列专属搜索叠加筛选）
+        function multiConditionSearch() {
+            // 获取所有搜索框的关键词（转为小写并去除首尾空格）
+            const globalKeyword = globalSearchInput.value.toLowerCase().trim();
+            const nameKeyword = nameSearchInput.value.toLowerCase().trim();
+            const ageKeyword = ageSearchInput.value.toLowerCase().trim();
+            // 如需其他列搜索，获取对应关键词，如：const jobKeyword = jobSearchInput.value.toLowerCase().trim();
+
+            // 第一步：筛选满足所有列专属搜索条件的数据
+            let filteredData = [...csvData];
+            // 筛选名字列
+            if (nameKeyword) {
+                filteredData = filteredData.filter(row => {
+                    // 注意：这里的"姓名"要和你的CSV表头列名完全一致（大小写敏感），可修改为你的列名如"name"
+                    const nameValue = String(row['姓名'] || row['name']).toLowerCase();
+                    return nameValue.includes(nameKeyword);
                 });
-            });
-            renderTable(filteredData); // 渲染筛选后的表格
+            }
+            // 筛选年龄列
+            if (ageKeyword) {
+                filteredData = filteredData.filter(row => {
+                    // 注意：这里的"年龄"要和你的CSV表头列名完全一致，可修改为你的列名如"age"
+                    const ageValue = String(row['年龄'] || row['age']).toLowerCase();
+                    return ageValue.includes(ageKeyword);
+                });
+            }
+            // 如需添加其他列筛选，复制上面的逻辑，修改列名即可
+            /* 示例：筛选职业列
+            if (jobKeyword) {
+                filteredData = filteredData.filter(row => {
+                    const jobValue = String(row['职业'] || row['job']).toLowerCase();
+                    return jobValue.includes(jobKeyword);
+                });
+            }
+            */
+
+            // 第二步：叠加全局搜索条件（如果有全局关键词）
+            if (globalKeyword) {
+                filteredData = filteredData.filter(row => {
+                    return Object.values(row).some(value => {
+                        return String(value).toLowerCase().includes(globalKeyword);
+                    });
+                });
+            }
+
+            // 渲染最终筛选后的表格
+            renderTable(filteredData);
         }
 
-        // 5. 绑定搜索框输入事件（实时搜索）
-        searchInput.addEventListener('input', function () {
-            const keyword = this.value;
-            searchTable(keyword);
-        });
+        // 5. 绑定所有搜索框的输入事件（实时触发多条件搜索）
+        function bindSearchEvents() {
+            // 全局搜索框事件
+            globalSearchInput.addEventListener('input', multiConditionSearch);
+            // 名字搜索框事件
+            nameSearchInput.addEventListener('input', multiConditionSearch);
+            // 年龄搜索框事件
+            ageSearchInput.addEventListener('input', multiConditionSearch);
+            // 如需其他列搜索，绑定对应事件，如：jobSearchInput.addEventListener('input', multiConditionSearch);
+        }
 
         // 6. 页面加载完成后，自动加载CSV并初始化
         window.addEventListener('DOMContentLoaded', function () {
             loadAndParseCSV();
+            bindSearchEvents(); // 绑定所有搜索事件
         });
     </script>
 </body>
