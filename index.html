@@ -124,6 +124,16 @@
             text-align: center;
             padding: 2rem;
         }
+        /* 新增：超链接样式 */
+        table a {
+            color: #3182ce;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        table a:hover {
+            color: #2b6cb0;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -212,6 +222,36 @@
         const coatingWrap = document.getElementById('coatingWrap');
         // 排除全局搜索的列（总数、空余数量）
         const excludeGlobalSearchColumns = ['总数', '空余数量'];
+        
+        // ========== 核心新增：产品型号-链接映射表 ==========
+        // 你可以在这里为不同的产品型号配置不同的跳转链接
+        const modelLinkMap = {
+            // 光学元件示例型号
+            "AD408-B": "details/AD408-B.html",
+        };
+
+        // 超链接配置 - 支持不同型号绑定不同链接
+        const linkConfig = {
+            // 要添加超链接的列名
+            linkColumns: ['产品型号'],
+            // 生成跳转链接的函数（适配不同型号的自定义链接）
+            getLinkUrl: function(rowData, columnName) {
+                if (columnName === '产品型号') {
+                    const model = rowData['产品型号'] || '';
+                    // 优先使用映射表中的自定义链接，没有则使用默认链接
+                    if (modelLinkMap[model]) {
+                        return modelLinkMap[model];
+                    } else {
+                        // 未配置的型号使用默认跳转规则（可自定义）
+                        const encodedModel = encodeURIComponent(model);
+                        return `default_detail.html?model=${encodedModel}&type=${currentCsvType}`;
+                    }
+                }
+                return '#'; // 默认链接
+            },
+            // 链接的target属性（_blank 新窗口打开，_self 当前窗口打开）
+            linkTarget: '_blank'
+        };
 
         // 2. 加载并解析CSV文件（适配两种文件类型）
         function loadAndParseCSV(filePath, csvType) {
@@ -256,7 +296,7 @@
             coatingSearch.value = '';
         }
 
-        // 4. 渲染HTML表格（适配两种表头）
+        // 4. 渲染HTML表格（适配两种表头，新增超链接功能）
         function renderTable(data) {
             tableHeader.innerHTML = '';
             tableBody.innerHTML = '';
@@ -277,12 +317,26 @@
             });
             tableHeader.appendChild(headerRow);
 
-            // 渲染表格内容
+            // 渲染表格内容（新增超链接逻辑）
             data.forEach(rowData => {
                 const row = document.createElement('tr');
                 headers.forEach(header => {
                     const td = document.createElement('td');
-                    td.textContent = rowData[header] || '';
+                    const cellValue = rowData[header] || '';
+                    
+                    // 判断当前列是否需要添加超链接
+                    if (linkConfig.linkColumns.includes(header) && cellValue) {
+                        // 创建超链接元素
+                        const link = document.createElement('a');
+                        link.href = linkConfig.getLinkUrl(rowData, header);
+                        link.target = linkConfig.linkTarget;
+                        link.textContent = cellValue;
+                        td.appendChild(link);
+                    } else {
+                        // 普通文本
+                        td.textContent = cellValue;
+                    }
+                    
                     row.appendChild(td);
                 });
                 tableBody.appendChild(row);
@@ -367,7 +421,7 @@
                 });
             }
 
-            // 渲染筛选结果
+            // 渲染筛选结果（会自动应用超链接逻辑）
             renderTable(filteredData);
         }
 
