@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品详情 - AD408-B</title>
+    <style>
+        /* 样式和之前一致，无需修改 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .detail-container {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 2rem;
+            background-color: #f8f9fa;
+        }
+        .product-title {
+            font-size: 1.8rem;
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #3182ce;
+            padding-bottom: 0.5rem;
+        }
+        .detail-item {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        .detail-label {
+            width: 120px;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 1rem;
+        }
+        .detail-value {
+            flex: 1;
+            color: #2d3748;
+            font-size: 1rem;
+        }
+        .back-btn {
+            margin-top: 2rem;
+            padding: 0.8rem 1.5rem;
+            background-color: #3182ce;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .back-btn:hover {
+            background-color: #2b6cb0;
+        }
+    </style>
+</head>
+<body>
+    <div class="detail-container">
+        <h1 class="product-title">产品详情 - AD408-B</h1>
+        <div id="detailContent"></div>
+        <button class="back-btn" onclick="window.history.back()">返回查询页面</button>
+    </div>
+
+    <script>
+        // ========== 核心修改：直接内嵌该型号的CSV数据 ==========
+        // 从你的data.csv里复制GX-001这一行的所有数据，填在这里
+        const productData = {
+            "产品型号": "AD408-B",
+            "产品类型": "消色差胶合透镜",
+            "材料": "N-LAK22/N-SF6HT",
+            "尺寸": "直径25.4mm",
+            "参数": "焦距100.0mm",
+            "镀膜": "增透膜700nm-1100nm",
+            "总数": "1",
+            "空余数量": "1",
+            "备注": ""
+        };
+
+        // 渲染数据（无需加载CSV，直接用内嵌数据）
+        function renderProductDetail() {
+            const detailContent = document.getElementById('detailContent');
+            detailContent.innerHTML = `
+                <div class="detail-item">
+                    <span class="detail-label">产品型号：</span>
+                    <span class="detail-value">${productData['产品型号'] || '-'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">产品类型：</span>
+                    <span class="detail-value">${productData['产品类型'] || '-'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">材料：</span>
+                    <span class="detail-value">${productData['材料'] || '-'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">参数：</span>
+                    <span class="detail-value">${productData['参数'] || '-'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">镀膜：</span>
+                    <span class="detail-value">${productData['镀膜'] || '-'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">备注：</span>
+                    <span class="detail-value">${productData['备注'] || '-'}</span>
+                </div>
+            `;
+        }
+
+        // 页面加载时渲染
+        window.addEventListener('DOMContentLoaded', renderProductDetail);
+    </script>
+</body>
+</html>
